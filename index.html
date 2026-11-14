@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#18251c">
+<title>WILD HUNT ONLINE — Prototype 0.1</title>
+<style>
+:root{--glass:rgba(13,24,17,.78);--line:rgba(255,255,255,.18);--gold:#d6b36a}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#17251b;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#fff;touch-action:none}
+#game{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
+#top{position:fixed;top:env(safe-area-inset-top,8px);left:10px;right:10px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;gap:8px}
+.panel{background:var(--glass);border:1px solid var(--line);border-radius:14px;padding:9px 12px;backdrop-filter:blur(8px);box-shadow:0 4px 20px #0003}
+#brand{font-weight:900;letter-spacing:1px;font-size:13px}#sub{font-size:10px;color:#d8d7c8;margin-top:2px}
+#stats{font-size:12px;text-align:left;direction:ltr;line-height:1.55}
+#hint{position:fixed;top:76px;left:50%;transform:translateX(-50%);font-size:11px;white-space:nowrap;color:#f2ead7;background:#17251bc9;border:1px solid var(--line);padding:6px 10px;border-radius:20px;pointer-events:none}
+#controls{position:fixed;inset:auto 0 0 0;height:185px;pointer-events:none}
+#stick{position:absolute;left:22px;bottom:25px;width:116px;height:116px;border-radius:50%;background:#14251bb8;border:2px solid #ffffff45;pointer-events:auto;touch-action:none}
+#nub{position:absolute;left:50%;top:50%;width:48px;height:48px;transform:translate(-50%,-50%);border-radius:50%;background:#d6b36a;border:2px solid #fff9;box-shadow:0 3px 12px #0008}
+#buttons{position:absolute;right:14px;bottom:22px;display:flex;flex-direction:column;gap:9px;pointer-events:auto}
+button{border:1px solid #ffffff55;background:var(--glass);color:white;border-radius:13px;padding:11px 14px;font-size:12px;font-weight:700;min-width:112px;backdrop-filter:blur(8px)}
+button:active{transform:scale(.97);background:#6b7047}
+#message{position:fixed;bottom:195px;left:50%;transform:translateX(-50%);padding:7px 12px;border-radius:12px;background:#102016c9;border:1px solid var(--line);font-size:11px;white-space:nowrap;pointer-events:none}
+#crosshair{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:9px;height:9px;border:1px solid #fff9;border-radius:50%;pointer-events:none}
+#footer{position:fixed;bottom:6px;left:50%;transform:translateX(-50%);font-size:9px;color:#ffffffa0;white-space:nowrap;pointer-events:none}
+@media(min-width:800px){#stick{left:38px;bottom:35px}#buttons{right:30px;bottom:35px}}
+</style>
+</head>
+<body>
+<div id="game"></div>
+<div id="top">
+ <div class="panel"><div id="brand">WILD HUNT ONLINE</div><div id="sub">نسخة تجريبية أولى · 0.1</div></div>
+ <div class="panel" id="stats">HUNT COINS: 0<br>MODE: EXPLORATION</div>
+</div>
+<div id="hint">اسحب عصا التحكم للمشي · اسحب الشاشة لتدوير الكاميرا</div>
+<div id="crosshair"></div>
+<div id="message">مرحباً بك في غابتك الأولى</div>
+<div id="controls">
+ <div id="stick"><div id="nub"></div></div>
+ <div id="buttons">
+  <button id="cameraBtn">تبديل المنظور: ثالث</button>
+  <button id="callBtn">نداء الطيور</button>
+ </div>
+</div>
+<div id="footer">نموذج تجريبي محلي — لا يوجد اتصال جماعي في هذا الإصدار</div>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const host=document.getElementById('game');
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x9db7b4);
+scene.fog=new THREE.Fog(0x9db7b4,35,125);
+const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,220);
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));
+renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+host.appendChild(renderer.domElement);
+
+scene.add(new THREE.HemisphereLight(0xe6f2ff,0x45523a,2.0));
+const sun=new THREE.DirectionalLight(0xffedce,2.2);sun.position.set(-25,40,18);sun.castShadow=true;
+sun.shadow.mapSize.set(1024,1024);scene.add(sun);
+
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(220,220),new THREE.MeshStandardMaterial({color:0x536d43,roughness:1}));
+ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+
+// gentle rolling hills around the playable clearing
+for(let i=0;i<18;i++){
+ const a=i/18*Math.PI*2, r=72+(i%3)*7;
+ const hill=new THREE.Mesh(new THREE.SphereGeometry(1,18,12),new THREE.MeshStandardMaterial({color:i%2?0x526c54:0x667957,roughness:1}));
+ hill.position.set(Math.cos(a)*r,-5,Math.sin(a)*r);hill.scale.set(24,11+(i%4)*2,18);scene.add(hill);
+}
+const trunkMat=new THREE.MeshStandardMaterial({color:0x59412c,roughness:1});
+const leafMats=[0x294b35,0x365c3d,0x496947].map(c=>new THREE.MeshStandardMaterial({color:c,roughness:1}));
+function tree(x,z,s=1){
+ const g=new THREE.Group();
+ const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.22*s,.36*s,3.1*s,7),trunkMat);trunk.position.y=1.55*s;trunk.castShadow=true;g.add(trunk);
+ for(let j=0;j<3;j++){const crown=new THREE.Mesh(new THREE.ConeGeometry((2.0-j*.28)*s,3.2*s,8),leafMats[(j+Math.floor(x+z))%3]);crown.position.y=(3.1+j*1.35)*s;crown.castShadow=true;g.add(crown);}
+ g.position.set(x,0,z);scene.add(g);
+}
+let seed=23;function rnd(){seed=(seed*9301+49297)%233280;return seed/233280}
+for(let i=0;i<145;i++){let a=rnd()*Math.PI*2,r=13+rnd()*82;tree(Math.cos(a)*r,Math.sin(a)*r,.65+rnd()*.8)}
+// path
+const path=new THREE.Mesh(new THREE.PlaneGeometry(7,100),new THREE.MeshStandardMaterial({color:0x887b5d,roughness:1}));
+path.rotation.x=-Math.PI/2;path.position.set(0,.015,-42);scene.add(path);
+// rocks and grass clumps
+for(let i=0;i<65;i++){let x=(rnd()-.5)*100,z=(rnd()-.5)*100;if(Math.abs(x)<7&&z<8&&z>-90)continue;
+ const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(.35+rnd()*.8,0),new THREE.MeshStandardMaterial({color:0x77796b,roughness:1}));
+ rock.position.set(x,.25,z);rock.scale.y=.55;rock.castShadow=true;scene.add(rock);
+}
+
+// player, intentionally simple placeholder model for first prototype
+const player=new THREE.Group();scene.add(player);
+const body=new THREE.Mesh(new THREE.CapsuleGeometry(.42,.9,4,8),new THREE.MeshStandardMaterial({color:0x66543b,roughness:1}));
+body.position.y=1.12;body.castShadow=true;player.add(body);
+const head=new THREE.Mesh(new THREE.SphereGeometry(.28,12,10),new THREE.MeshStandardMaterial({color:0xb58d6b}));
+head.position.y=1.95;player.add(head);
+const hat=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.1,12),new THREE.MeshStandardMaterial({color:0x403b2d}));
+hat.position.y=2.19;player.add(hat);
+const legs=new THREE.Group();legs.position.y=.55;player.add(legs);
+for(let s of [-1,1]){let l=new THREE.Mesh(new THREE.BoxGeometry(.22,.75,.25),new THREE.MeshStandardMaterial({color:0x343c30}));l.position.set(s*.19,-.25,0);legs.add(l)}
+player.position.set(0,0,5);
+
+// deer placeholder with animated wandering
+function makeDeer(x,z){
+ const d=new THREE.Group();const coat=new THREE.MeshStandardMaterial({color:0x9a7047,roughness:1});
+ const torso=new THREE.Mesh(new THREE.BoxGeometry(1.25,.72,.48),coat);torso.position.y=1.05;d.add(torso);
+ const neck=new THREE.Mesh(new THREE.BoxGeometry(.28,.72,.3),coat);neck.position.set(.48,1.48,0);neck.rotation.z=-.32;d.add(neck);
+ const h=new THREE.Mesh(new THREE.SphereGeometry(.23,10,8),coat);h.position.set(.68,1.83,0);d.add(h);
+ const legMat=new THREE.MeshStandardMaterial({color:0x57422e});
+ for(let sx of [-.4,.4])for(let sz of [-.16,.16]){const leg=new THREE.Mesh(new THREE.BoxGeometry(.12,.7,.12),legMat);leg.position.set(sx,.38,sz);d.add(leg)}
+ d.position.set(x,0,z);scene.add(d);return d;
+}
+const deer=[makeDeer(10,-22),makeDeer(-18,-45),makeDeer(24,-61)];
+deer.forEach((d,i)=>d.rotation.y=i*.8);
+
+// distant mountains
+for(let i=0;i<12;i++){const m=new THREE.Mesh(new THREE.ConeGeometry(10+rnd()*8,22+rnd()*17,5),new THREE.MeshStandardMaterial({color:0x71817a,roughness:1}));let a=i/12*Math.PI*2;m.position.set(Math.cos(a)*105,7,Math.sin(a)*105);scene.add(m)}
+
+let firstPerson=false, yaw=0, pitch=-.13, moveX=0,moveY=0, coins=0, lastTime=performance.now();
+const cameraBtn=document.getElementById('cameraBtn'), message=document.getElementById('message'), stats=document.getElementById('stats');
+function say(t){message.textContent=t;message.style.opacity=1;clearTimeout(say.timer);say.timer=setTimeout(()=>message.style.opacity=.0,2600)}
+cameraBtn.addEventListener('click',()=>{firstPerson=!firstPerson;cameraBtn.textContent='تبديل المنظور: '+(firstPerson?'أول':'ثالث');say(firstPerson?'منظور الشخص الأول':'منظور الشخص الثالث')});
+document.getElementById('callBtn').addEventListener('click',()=>say('تم تشغيل نداء الطيور — ستضاف استجابة الطيور في إصدار لاحق'));
+
+// virtual joystick
+const stick=document.getElementById('stick'),nub=document.getElementById('nub');let stickId=null;
+function setStick(e){const r=stick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let dx=e.clientX-cx,dy=e.clientY-cy,max=43,len=Math.hypot(dx,dy);if(len>max){dx=dx/len*max;dy=dy/len*max}moveX=dx/max;moveY=dy/max;nub.style.left=`calc(50% + ${dx}px)`;nub.style.top=`calc(50% + ${dy}px)`}
+stick.addEventListener('pointerdown',e=>{stickId=e.pointerId;stick.setPointerCapture(stickId);setStick(e)});
+stick.addEventListener('pointermove',e=>{if(e.pointerId===stickId)setStick(e)});
+function releaseStick(e){if(e.pointerId!==stickId)return;stickId=null;moveX=moveY=0;nub.style.left='50%';nub.style.top='50%'}
+stick.addEventListener('pointerup',releaseStick);stick.addEventListener('pointercancel',releaseStick);
+
+// drag on the open screen to look around (ignore controls)
+let lookId=null,lastX=0,lastY=0;
+renderer.domElement.addEventListener('pointerdown',e=>{lookId=e.pointerId;lastX=e.clientX;lastY=e.clientY;renderer.domElement.setPointerCapture(lookId)});
+renderer.domElement.addEventListener('pointermove',e=>{if(e.pointerId!==lookId)return;let dx=e.clientX-lastX,dy=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;yaw-=dx*.004;pitch=Math.max(-.65,Math.min(.35,pitch-dy*.003)});
+renderer.domElement.addEventListener('pointerup',e=>{if(e.pointerId===lookId)lookId=null});
+renderer.domElement.addEventListener('pointercancel',()=>lookId=null);
+
+function animate(now){
+ requestAnimationFrame(animate);let dt=Math.min((now-lastTime)/1000,.04);lastTime=now;
+ const forward=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));
+ const right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
+ const dir=forward.clone().multiplyScalar(-moveY).add(right.multiplyScalar(moveX));
+ if(dir.lengthSq()>.001){dir.normalize();player.position.addScaledVector(dir,5.2*dt);player.rotation.y=Math.atan2(dir.x,dir.z);legs.rotation.x=Math.sin(now*.012)*.35}
+ player.position.x=THREE.MathUtils.clamp(player.position.x,-48,48);player.position.z=THREE.MathUtils.clamp(player.position.z,-95,35);
+ deer.forEach((d,i)=>{d.position.x+=Math.sin(now*.00025+i)*.002;d.position.z+=Math.cos(now*.0002+i)*.0015;d.rotation.y=Math.sin(now*.0002+i)*.35});
+ let target,offset;
+ if(firstPerson){target=new THREE.Vector3(player.position.x,2.0,player.position.z);offset=new THREE.Vector3(-Math.sin(yaw)*.08, pitch*2, -Math.cos(yaw)*.08)}
+ else{target=new THREE.Vector3(player.position.x,1.5,player.position.z);offset=new THREE.Vector3(Math.sin(yaw)*6,3.3,Math.cos(yaw)*6)}
+ if(firstPerson){camera.position.copy(target);camera.rotation.order='YXZ';camera.rotation.y=yaw;camera.rotation.x=pitch}
+ else{const desired=target.clone().add(offset);camera.position.lerp(desired,.14);camera.lookAt(player.position.x,1.45,player.position.z-1.5)}
+ renderer.render(scene,camera);
+}
+requestAnimationFrame(animate);
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+</script>
+</body>
+</html>
